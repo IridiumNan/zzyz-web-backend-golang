@@ -1,5 +1,9 @@
 # defualt serve_address -> 0.0.0.0:8080
-serve_address = ":8080"
+main_address = "127.0.0.1:8080"
+
+# internal_serve_address -> 
+# for internal usage: don't expose this addr to Intenel
+internal_address = "127.0.0.1:8081"
 
 # DatabasePath
 database_path = "./database.db"

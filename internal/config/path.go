@@ -29,12 +29,6 @@ var configDirCandidates = []string{
 
 var GlobalWebConfig *WebConfig
 
-type WebConfig struct {
-	Address      string `toml:"serve_address"`
-	DatabasePath string `toml:"database_path"`
-	LogPath      string `toml:"log_path"`
-}
-
 func InitGlobalConfig() {
 	var configFilePath string
 	var exist bool
@@ -70,10 +64,6 @@ func InitGlobalConfig() {
 	}
 
 	GlobalWebConfig = &webConfig
-}
-
-func GetConfig() *WebConfig {
-	return GlobalWebConfig
 }
 
 // initDefaultConfig : place the config.toml file to defaultConfigPath
@@ -129,7 +119,7 @@ func getDefaultConfigDir() (configPath string) {
 }
 
 func GetLogFilePath() string {
-	rawLogPath := GetConfig().LogPath
+	rawLogPath := GlobalWebConfig.LogPath
 
 	homeDir, _ := os.UserHomeDir()
 

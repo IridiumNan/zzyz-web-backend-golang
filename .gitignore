@@ -1,3 +1,5 @@
 .codewhale/
 bin
+local/
+__pycache__/
 

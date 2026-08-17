@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"log/slog"
 
 	"github.com/IridiumNan/zzyz-web-backend-golang/internal/config"
@@ -29,8 +30,20 @@ func main() {
 		}
 	}()
 
-	// Router
-	router := getGinRouter()
+	go func() {
+		// NOTE: internalRouter -> Use goroutine to run it
+		internalRouter := getInternalRouter()
+		err := internalRouter.Run(config.GlobalWebConfig.InternalAddress)
+		if err != nil {
+			utils.TextLogger.Error("error to start internal router", "err", err)
+		}
+	}()
 
-	router.Run()
+	// mainRouter
+	mainRouter := getMainRouter()
+
+	err = mainRouter.Run(config.GlobalWebConfig.MainAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
