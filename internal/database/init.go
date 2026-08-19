@@ -60,6 +60,7 @@ func initDB(databasePath string) error {
 // OpenLocalDB : Open database (sqlite) by the path from configuration
 // if database file not exist, it will use the func initDB to create a new one
 // The db is assert to the variant globalDB
+// Remember to call CloseLocalDB using defer
 func OpenLocalDB(databasePath string) {
 	funcErrDescription := "error when open database"
 

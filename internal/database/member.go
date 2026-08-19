@@ -162,3 +162,59 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 
 	return nil
 }
+
+// DeleteMember : delete the member by id, it will not throw error now
+func (mp *MemberSQLProducer) DeleteMember(id int, softDelete bool) error {
+	// TODO: offer soft delete and hard delete
+	switch softDelete {
+	case true:
+		return mp.softDeleteMember(id)
+	case false:
+		return mp.hardDeleteMember(id)
+	}
+
+	return nil
+}
+
+func (mp *MemberSQLProducer) hardDeleteMember(id int) error {
+	sqlStr := fmt.Sprintf("DELETE FROM %s WHERE id = %d", mp.TableName, id)
+
+	execFunc := func(ctx context.Context, tx *sql.Tx) error {
+		query := sqlStr
+		_, err := tx.Exec(query)
+		if err != nil {
+			return fmt.Errorf("error when hard delete member: id = %d", id)
+		}
+
+		return nil
+	}
+
+	// push new write tack to chan
+	sqlWriteTaskChan <- sqlWriteTask{
+		execFunc: execFunc,
+		sqlStr:   sqlStr,
+	}
+
+	return nil
+}
+
+func (mp *MemberSQLProducer) softDeleteMember(id int) error {
+	sqlStr := fmt.Sprintf("UPDATE %s SET is_delete = 1 WHERE id = %d", mp.TableName, id)
+
+	execFunc := func(ctx context.Context, tx *sql.Tx) error {
+		query := sqlStr
+		_, err := tx.Exec(query)
+		if err != nil {
+			return fmt.Errorf("error when soft delete member: id = %d", id)
+		}
+
+		return nil
+	}
+
+	sqlWriteTaskChan <- sqlWriteTask{
+		execFunc: execFunc,
+		sqlStr:   sqlStr,
+	}
+
+	return nil
+}

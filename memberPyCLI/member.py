@@ -173,12 +173,12 @@ class MemberConnect:
 
         jq_print(resp.json())
 
-    def new_delete_request(self, id: int) -> None:
-        url = self.base_url + self.endpoints[ZZYZMethod.Delete]
+    def new_delete_request(self, id: int, soft: bool) -> None:
+        url = self.base_url + self.endpoints[ZZYZMethod.Delete] + "/" + str(id)
 
-        print(f"send a request to url: {url}, id: {id}")
+        print(f"send a request to url: {url}, soft: {soft}")
 
-        resp: requests.Response = self.session.delete(url, params=f"id={id}")
+        resp: requests.Response = self.session.delete(url, params=f"soft={soft}")
 
         print("status code: ", resp.status_code)
 

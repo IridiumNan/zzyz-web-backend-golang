@@ -35,6 +35,18 @@ class MemberShell:
 
         return val
 
+    def ask_with_options(self, attr: str, options_list: list[str], default_option: str):
+        query = f"set the {attr} ["
+        for option in options_list:
+            query += option + "/"
+        query += "] ->"
+
+        val = input(query)
+        if val == "":
+            return default_option
+
+        return val
+
     def do_help(self):
         print(self.menu)
 
@@ -65,6 +77,15 @@ class MemberShell:
 
     def do_delete(self):
         print("exec delete")
+        id = int(self.ask_with_required("id"))
+
+        soft = self.ask_with_options("soft", ["Y", "n"], "y")
+
+        soft_bool = False
+        if soft.lower() == "y":
+            soft_bool = True
+
+        self.con.new_delete_request(id, soft_bool)
 
     def do_query(self):
         print("exec queyr")

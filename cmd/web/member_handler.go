@@ -12,6 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var memberDB = database.NewMemberDB()
+
 func memberListHandler(c *gin.Context) {
 	mp := database.NewMemberDB()
 
@@ -26,16 +28,10 @@ func memberListHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.NewDataResponse(members))
-
-	// TODO: Check if this work
+	c.JSON(http.StatusOK, models.NewDataResponseWithMessage(members, "Password will no display, if you want to get passwd, update it pls"))
 }
 
 func memberQueryHandler(c *gin.Context) {
-	// TODO: return msg of the member include id power nick email is_delete
-	// receive the nick, email or power
-	// If no condition provide, return all member's base information
-
 	// The name act as the attribute
 	attribute := c.Param("name")
 
@@ -64,16 +60,14 @@ func memberCreateHander(c *gin.Context) {
 
 	mb := reqJSON.Data["member"]
 
-	memberDB := database.NewMemberDB()
-
 	err = memberDB.InsertMember(mb)
 	if err != nil {
-		// NOTE: Passwd hash failed
+		// NOTE: This will happen when passwd hash failed
 		c.JSON(http.StatusBadRequest, models.NewBadResponse(nil, err))
 		return
 	}
 
-	c.JSON(http.StatusOK, models.NewDataResponse("get the request for creating member"))
+	c.JSON(http.StatusOK, models.NewDataResponse("add the task of create member"))
 }
 
 func memberUpdateHander(c *gin.Context) {
@@ -81,19 +75,26 @@ func memberUpdateHander(c *gin.Context) {
 }
 
 func memberDeleteHandler(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Param("name")
+	isSoft := c.Query("soft")
 
+	isSoftBool := false
+
+	if isSoft == "True" {
+		isSoftBool = true
+	}
+
+	fmt.Println("IS SOFT", isSoft)
 	idInt, err := strconv.Atoi(idStr)
 	if err != nil {
 		slog.Error("error when convet id to int", "err", err, "idStr", idStr)
 		return
 	}
 
-	fmt.Println("get id -> ", idInt)
-
-	type resp struct {
-		Greet string `json:"greet"`
+	err = memberDB.DeleteMember(idInt, isSoftBool)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.NewBadResponse(nil, fmt.Errorf("error when delete id : %d, err: %w", idInt, err)))
 	}
 
-	c.JSON(200, resp{Greet: "hello"})
+	c.JSON(http.StatusOK, models.NewDataResponse(fmt.Sprintf("add the task for delete member with id: %d, soft: %v", idInt, isSoftBool)))
 }
