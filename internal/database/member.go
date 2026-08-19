@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/IridiumNan/zzyz-web-backend-golang/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -14,7 +15,7 @@ type Member struct {
 	// The primary key ID
 	// It is auto increment on the sqlite
 	// You should not provide the value
-	// ID int `json:"id"`
+	ID int `json:"id"`
 
 	// NOTE: The power of this member
 	// for now 1 has all power and 0 has no power
@@ -66,6 +67,46 @@ func CheckPasswdAndHash(passwd string, hash string) bool {
 	return err == nil
 }
 
+func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
+	queryStr := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s", mp.TableName)
+
+	rows, err := globalDB.Query(queryStr)
+	if err != nil {
+		return nil, fmt.Errorf("ListMember: error when query: %w", err)
+	}
+
+	defer rows.Close()
+
+	members := []Member{}
+	for rows.Next() {
+		var id int
+		var power int
+		var nick string
+		var email string
+		var isDelete int
+
+		err = rows.Scan(&id, &power, &nick, &email, &isDelete)
+		if err != nil {
+			utils.TextLogger.Error("error when scan member", "err", err, "id", id)
+			continue
+		}
+
+		isDeleteBool := false
+		if isDelete != 0 {
+			isDeleteBool = true
+		}
+		members = append(members, Member{
+			ID:        id,
+			Power:     power,
+			Nick:      nick,
+			Email:     email,
+			RawPasswd: "",
+			IsDelete:  isDeleteBool,
+		})
+	}
+	return members, nil
+}
+
 func (mp *MemberSQLProducer) InsertMember(member Member) error {
 	passwd, err := hashPasswd(member.RawPasswd)
 	if err != nil {
@@ -110,7 +151,6 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 		}
 
 		// NOTE: DO NOT call tx.Commit() here, let worker handler it
-
 		return nil
 	}
 

@@ -71,6 +71,7 @@ func OpenLocalDB(databasePath string) {
 	var err error
 
 	if _, err = os.Stat(databasePath); os.IsNotExist(err) {
+		utils.TextLogger.Info("database file not found, create a new one", "path", databasePath)
 		err = initDB(databasePath)
 		if err != nil {
 			// Raise Fatal if fail to init

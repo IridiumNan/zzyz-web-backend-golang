@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/IridiumNan/zzyz-web-backend-golang/internal/config"
+	"github.com/IridiumNan/zzyz-web-backend-golang/internal/database"
 	"github.com/IridiumNan/zzyz-web-backend-golang/internal/utils"
 )
 
@@ -30,6 +31,21 @@ func main() {
 		}
 	}()
 
+	// NOTE: automatical create if not exist
+	// Open database
+	database.OpenLocalDB(config.GlobalWebConfig.DatabasePath)
+
+	// starting the taker for handling db for member
+	go database.RunDBWriteTasker()
+
+	defer func() {
+		err := database.CloseLocalDB()
+		if err != nil {
+			utils.TextLogger.Error("error when close database", "err", err)
+		}
+	}()
+
+	// Run the internal member router
 	go func() {
 		// NOTE: internalRouter -> Use goroutine to run it
 		internalRouter := getInternalRouter()

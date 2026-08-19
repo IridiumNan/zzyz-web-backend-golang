@@ -2,4 +2,4 @@
 bin
 local/
 __pycache__/
-
+*.db

@@ -13,10 +13,13 @@ func getMainRouter() (router *gin.Engine) {
 func getInternalRouter() (router *gin.Engine) {
 	router = gin.Default()
 
-	router.GET("/member/query", memberQueryHandler)
+	// TODO: Update this as RESTFUL API
+	// /member/{id}/*action
+	router.GET("/member/list", memberListHandler)
+	router.GET("/member/query/:name", memberQueryHandler)
 	router.POST("/member/create", memberCreateHander)
-	router.PATCH("/member/update", memberUpdateHander)
-	router.DELETE("/member/delete", memberDeleteHandler)
+	router.PATCH("/member/update/:name/*action", memberUpdateHander)
+	router.DELETE("/member/delete/:name", memberDeleteHandler)
 
 	return
 }

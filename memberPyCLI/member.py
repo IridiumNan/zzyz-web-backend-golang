@@ -2,9 +2,11 @@ from typing import Any
 from enum import Enum, auto
 import json
 import requests
+import subprocess
 
 
 class ZZYZMethod(Enum):
+    List = auto()
     Query = auto()
     Create = auto()
     Update = auto()
@@ -14,22 +16,37 @@ class ZZYZMethod(Enum):
 class MemberAttr(Enum):
     Empty = auto()
     ID = auto()
+    Power = auto()
     Nick = auto()
     Email = auto()
     Passwd = auto()
     IsDelete = auto()
 
 
+def dict_to_json_str(data: dict) -> str:
+    return json.dumps(data, indent=4)
+
+
+def jq_print(data: dict) -> None:
+
+    cmd = ["jq", "-n", "-C", json.dumps(data)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    print(result.stdout)
+
+
 class Member:
     def __init__(
         self,
-        id: int = -1,
+        id: int = 0,
+        power: int = 0,
         nick: str = "",
         email: str = "",
         passwd: str = "",
         is_delete: bool = False,
     ):
         self.id = id
+        self.power = power
         self.nick = nick
         self.email = email
         self.passwd = passwd
@@ -53,8 +70,9 @@ class Member:
     def get_dict(self):
         return {
             # NOTE: The id just used for mark and update
-            # Don't send it when request
+            # Should not use it as send request
             # "id": self.id,
+            "power": self.power,
             "nick": self.nick,
             "email": self.email,
             "password": self.passwd,
@@ -69,7 +87,7 @@ class Member:
 
 
 class MemberConnect:
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str = "http://127.0.0.1:8081"):
         """
         This base_url not end with slash / !!!
         It just look like http://127.0.0.1:8080
@@ -80,29 +98,58 @@ class MemberConnect:
         self.base_url = base_url
 
         self.endpoints = {
+            ZZYZMethod.List: "/member/list",
             ZZYZMethod.Query: "/member/query",
             ZZYZMethod.Create: "/member/create",
             ZZYZMethod.Update: "/member/update",
             ZZYZMethod.Delete: "/member/delete",
         }
 
+    def new_list_request(self):
+        url = self.base_url + self.endpoints[ZZYZMethod.List]
+
+        print(f"send a get request to url: {url}")
+        resp: requests.Response = self.session.get(url)
+
+        print(f"status_code: {resp.status_code}")
+
+        jq_print(resp.json())
+
     def new_query_request(
         self,
-        member_attr: MemberAttr = MemberAttr.Empty,
+        attr: MemberAttr = MemberAttr.Empty,
         value: Any = None,
-        select_all: bool = False,
-    ) -> Any:
+    ) -> None:
         """
         Query with specific attributte
         If select_all == True
         return all Members
         Just use it as you need list all members
         """
+        if attr == MemberAttr.Empty:
+            return
 
         url = self.base_url + self.endpoints[ZZYZMethod.Query]
-        pass
 
-    def new_create_request(self, m: Member) -> Any:
+        match attr:
+            case MemberAttr.ID:
+                url += "/id"
+            case MemberAttr.Nick:
+                url += "/nick"
+            case MemberAttr.Power:
+                url += "/power"
+            case MemberAttr.Email:
+                url += "/email"
+            case MemberAttr.IsDelete:
+                url += "/is_delete"
+        print(f"send a get request to url: {url}, vale: {value}")
+        resp: requests.Response = self.session.get(url, params=f"value={value}")
+
+        print("status code: ", resp.status_code)
+
+        jq_print(resp.json())
+
+    def new_create_request(self, m: Member) -> None:
         url = self.base_url + self.endpoints[ZZYZMethod.Create]
         member_dict = m.get_dict()
 
@@ -112,9 +159,9 @@ class MemberConnect:
 
         print("status code: ", resp.status_code)
 
-        return resp.json()
+        jq_print(resp.json())
 
-    def new_update_request(self, id: int, updated_member: Member) -> Any:
+    def new_update_request(self, id: int, updated_member: Member) -> None:
         url = self.base_url + self.endpoints[ZZYZMethod.Update]
         member_dict = updated_member.get_dict()
 
@@ -124,9 +171,9 @@ class MemberConnect:
 
         print("status code: ", resp.status_code)
 
-        return resp.json()
+        jq_print(resp.json())
 
-    def new_delete_request(self, id: int) -> Any:
+    def new_delete_request(self, id: int) -> None:
         url = self.base_url + self.endpoints[ZZYZMethod.Delete]
 
         print(f"send a request to url: {url}, id: {id}")
@@ -135,4 +182,4 @@ class MemberConnect:
 
         print("status code: ", resp.status_code)
 
-        return resp.json()
+        jq_print(resp.json())

@@ -29,6 +29,7 @@ var (
 
 // RunDBWriteTasker : This Tasker just handle the request for post update and
 func RunDBWriteTasker() {
+	utils.TextLogger.Info("RunDBWriteTasker: starting task")
 	for {
 		select {
 		case <-sqlWriteStopChan:
