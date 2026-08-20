@@ -29,6 +29,7 @@ var (
 
 // RunDBWriteTasker : This Tasker just handle the request for post update and
 // NOTE: Run it before you start router
+// It will exec the execFunc and sqlStr on sqlWriteTask just LOG ONLY
 func RunDBWriteTasker() {
 	utils.TextLogger.Info("RunDBWriteTasker: starting task")
 	for {

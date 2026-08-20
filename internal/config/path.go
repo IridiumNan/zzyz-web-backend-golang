@@ -29,6 +29,9 @@ var configDirCandidates = []string{
 
 var GlobalWebConfig *WebConfig
 
+// InitGlobalConfig : load config from [configDirCandidates]
+// if file not found (when you run this first), it will create a new config file
+// it will throw Fatal if failed
 func InitGlobalConfig() {
 	var configFilePath string
 	var exist bool

@@ -13,7 +13,7 @@ class MemberShell:
         query: query members match the condition
         exit: exit this shell
         """
-        self.prompt = "->"
+        self.prompt = "zzyz>"
 
     def ask_with_default(self, attr: str, default_value: Any) -> str:
         val = input(f"set the {attr} [defualt: {default_value}] ->")

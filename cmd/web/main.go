@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	// panic if fail
+	// WARN: This func panic if fail
 	config.InitGlobalConfig()
 
 	// fmt.Println(webConfig)
@@ -23,6 +23,7 @@ func main() {
 	}
 
 	defer func() {
+		// Close logFile before the process end
 		if logFile != nil {
 			err := logFile.Close()
 			if err != nil {
@@ -45,7 +46,7 @@ func main() {
 		}
 	}()
 
-	// Run the internal member router
+	// Run the internal router for member modify, check the [getInternalRouter] for endpoints
 	go func() {
 		// NOTE: internalRouter -> Use goroutine to run it
 		internalRouter := getInternalRouter()

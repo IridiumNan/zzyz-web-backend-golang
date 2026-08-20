@@ -9,7 +9,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const memberTableName = "members"
+const (
+	memberTableName = "members"
+	logOnlyHint     = "[LOG ONLY]"
+)
 
 type Member struct {
 	// The primary key ID
@@ -44,12 +47,14 @@ type MemberSQLProducer struct {
 	TableName string
 }
 
+// NewMemberDB : return a new MemberSQLProducer with Default TableName [memberTableName]
 func NewMemberDB() *MemberSQLProducer {
 	return &MemberSQLProducer{
 		memberTableName,
 	}
 }
 
+// hashPasswd : the rawPasswd as input and output hashedpasswd which should be insert into database
 func hashPasswd(rawPasswd string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(rawPasswd), bcrypt.DefaultCost)
 	if err != nil {
@@ -67,46 +72,14 @@ func CheckPasswdAndHash(passwd string, hash string) bool {
 	return err == nil
 }
 
-func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
-	queryStr := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s", mp.TableName)
+// NOTE:
+// Begin of the function for handling INSERT operation to database
+// functions [InsertMember]
 
-	rows, err := globalDB.Query(queryStr)
-	if err != nil {
-		return nil, fmt.Errorf("ListMember: error when query: %w", err)
-	}
-
-	defer rows.Close()
-
-	members := []Member{}
-	for rows.Next() {
-		var id int
-		var power int
-		var nick string
-		var email string
-		var isDelete int
-
-		err = rows.Scan(&id, &power, &nick, &email, &isDelete)
-		if err != nil {
-			utils.TextLogger.Error("error when scan member", "err", err, "id", id)
-			continue
-		}
-
-		isDeleteBool := false
-		if isDelete != 0 {
-			isDeleteBool = true
-		}
-		members = append(members, Member{
-			ID:        id,
-			Power:     power,
-			Nick:      nick,
-			Email:     email,
-			RawPasswd: "",
-			IsDelete:  isDeleteBool,
-		})
-	}
-	return members, nil
-}
-
+// InsertMember : insert the new member into the database
+// it will not use member.ID, the ID should handle by sqlite itself (auto increment)
+// As it's a write operation on database, so the request will handled by [RunDBWriteTasker]
+// NOTE: sqlStr is just LOG ONLY, DON'T USE IT DIRECTLY
 func (mp *MemberSQLProducer) InsertMember(member Member) error {
 	passwd, err := hashPasswd(member.RawPasswd)
 	if err != nil {
@@ -118,8 +91,10 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 		isDeleteInt = 1
 	}
 	// Construct the sqlStr just for log record
+	// NOTE: LOG ONLY
 	sqlStr := fmt.Sprintf(
-		"INSERT INTO %s (power, nick, email, passwd, is_delete)\nVALUES(%d, %s, %s, %s, %d)",
+		"%s INSERT INTO %s (power, nick, email, passwd, is_delete)\nVALUES(%d, %s, %s, %s, %d)",
+		logOnlyHint,
 		mp.TableName,
 		member.Power,
 		member.Nick,
@@ -149,12 +124,12 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 		if err != nil {
 			return fmt.Errorf("error when exec context: %w", err)
 		}
-
-		// NOTE: DO NOT call tx.Commit() here, let worker handler it
+		// WARN: DO NOT call tx.Commit() here, let worker handler it
 		return nil
 	}
 
 	// push new write task to chan
+	// exec on func [RunDBWriteTasker]
 	sqlWriteTaskChan <- sqlWriteTask{
 		execFunc: execFunc,
 		sqlStr:   sqlStr,
@@ -163,9 +138,67 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 	return nil
 }
 
+// NOTE:
+// Begin of the function for handling SELECT operation to database
+// functions
+// [ListMember]
+
+// ListMember : exec for SELECT * (without passwd) from TableName
+// return all member struct slice and error
+// This function is read database so doesn't push the task to sqlWriteTaskChan
+func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
+	queryStr := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s", mp.TableName)
+
+	rows, err := globalDB.Query(queryStr)
+	if err != nil {
+		return nil, fmt.Errorf("ListMember: error when query: %w", err)
+	}
+
+	defer rows.Close()
+
+	members := []Member{}
+	// traverse the rows and push to members slice
+	for rows.Next() {
+		var id int
+		var power int
+		var nick string
+		var email string
+		var isDelete int
+
+		err = rows.Scan(&id, &power, &nick, &email, &isDelete)
+		if err != nil {
+			utils.TextLogger.Error("error when scan member", "err", err, "id", id)
+			continue
+		}
+
+		isDeleteBool := false
+		if isDelete != 0 {
+			isDeleteBool = true
+		}
+		members = append(members, Member{
+			ID:        id,
+			Power:     power,
+			Nick:      nick,
+			Email:     email,
+			RawPasswd: "",
+			IsDelete:  isDeleteBool,
+		})
+	}
+	return members, nil
+}
+
+// TODO: function QeuryMember
+
+// NOTE:
+// Begin of the function for handling DELETE operation to database
+// functions
+// [DeleteMember]
+// [hardDeleteMember]
+
 // DeleteMember : delete the member by id, it will not throw error now
+// It can be soft delete or hard delete
+// See func [hardDeleteMember] and [softDeleteMember]
 func (mp *MemberSQLProducer) DeleteMember(id int, softDelete bool) error {
-	// TODO: offer soft delete and hard delete
 	switch softDelete {
 	case true:
 		return mp.softDeleteMember(id)
@@ -176,6 +209,7 @@ func (mp *MemberSQLProducer) DeleteMember(id int, softDelete bool) error {
 	return nil
 }
 
+// hardDeleteMember : hard delete remove the data from database file
 func (mp *MemberSQLProducer) hardDeleteMember(id int) error {
 	sqlStr := fmt.Sprintf("DELETE FROM %s WHERE id = %d", mp.TableName, id)
 
@@ -189,7 +223,8 @@ func (mp *MemberSQLProducer) hardDeleteMember(id int) error {
 		return nil
 	}
 
-	// push new write tack to chan
+	// push new write task to chan
+	// exec on func [RunDBWriteTasker]
 	sqlWriteTaskChan <- sqlWriteTask{
 		execFunc: execFunc,
 		sqlStr:   sqlStr,
@@ -198,6 +233,13 @@ func (mp *MemberSQLProducer) hardDeleteMember(id int) error {
 	return nil
 }
 
+// NOTE:
+// Begin of the function for handling UPDATE operation to database
+// functions
+// [softDeleteMember]
+
+// softDeleteMember : soft delete just set the is_delete on database as 1
+// It will not really delete the data
 func (mp *MemberSQLProducer) softDeleteMember(id int) error {
 	sqlStr := fmt.Sprintf("UPDATE %s SET is_delete = 1 WHERE id = %d", mp.TableName, id)
 
@@ -211,6 +253,8 @@ func (mp *MemberSQLProducer) softDeleteMember(id int) error {
 		return nil
 	}
 
+	// push new write task to chan
+	// exec on func [RunDBWriteTasker]
 	sqlWriteTaskChan <- sqlWriteTask{
 		execFunc: execFunc,
 		sqlStr:   sqlStr,
@@ -218,3 +262,5 @@ func (mp *MemberSQLProducer) softDeleteMember(id int) error {
 
 	return nil
 }
+
+// TODO: function UpdateMember
