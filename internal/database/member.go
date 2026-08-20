@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"github.com/IridiumNan/zzyz-web-backend-golang/internal/utils"
 	"golang.org/x/crypto/bcrypt"
@@ -70,6 +71,38 @@ func CheckPasswdAndHash(passwd string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(passwd))
 
 	return err == nil
+}
+
+// parseMembersFromRows Convert rows into member slices
+func parseMembersFromRows(rows *sql.Rows) (members []Member, err error) {
+	members = []Member{}
+	for rows.Next() {
+		var id int
+		var power int
+		var nick string
+		var email string
+		var isDelete int
+
+		err = rows.Scan(&id, &power, &nick, &email, &isDelete)
+		if err != nil {
+			utils.TextLogger.Error("error when scan member", "err", err, "id", id)
+			continue
+		}
+
+		isDeleteBool := false
+		if isDelete != 0 {
+			isDeleteBool = true
+		}
+		members = append(members, Member{
+			ID:        id,
+			Power:     power,
+			Nick:      nick,
+			Email:     email,
+			RawPasswd: "",
+			IsDelete:  isDeleteBool,
+		})
+	}
+	return members, nil
 }
 
 // NOTE:
@@ -146,6 +179,7 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 // ListMember : exec for SELECT * (without passwd) from TableName
 // return all member struct slice and error
 // This function is read database so doesn't push the task to sqlWriteTaskChan
+// If the len(members) == 0. it will still return, you should check
 func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
 	queryStr := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s", mp.TableName)
 
@@ -156,38 +190,51 @@ func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
 
 	defer rows.Close()
 
-	members := []Member{}
-	// traverse the rows and push to members slice
-	for rows.Next() {
-		var id int
-		var power int
-		var nick string
-		var email string
-		var isDelete int
+	members, err := parseMembersFromRows(rows)
 
-		err = rows.Scan(&id, &power, &nick, &email, &isDelete)
-		if err != nil {
-			utils.TextLogger.Error("error when scan member", "err", err, "id", id)
-			continue
-		}
-
-		isDeleteBool := false
-		if isDelete != 0 {
-			isDeleteBool = true
-		}
-		members = append(members, Member{
-			ID:        id,
-			Power:     power,
-			Nick:      nick,
-			Email:     email,
-			RawPasswd: "",
-			IsDelete:  isDeleteBool,
-		})
-	}
-	return members, nil
+	return members, err
 }
 
-// TODO: function QeuryMember
+// QeuryMember The function will query with sqlStr as below
+// SELECT id, power, nick, email, is_delete FROM TableName WHERE attribute = value
+// Ensure you convert all type as the data on sql before calling this func
+// If the length of members is 0, it will still return, remember to check it
+// the param like if True, will query with WHERE attribute like value
+func (mp *MemberSQLProducer) QeuryMember(attribute string, value string, like bool) (members []Member, err error) {
+	operator := "="
+	if like {
+		operator = "like"
+	}
+
+	sqlStr := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s WHERE %s %s %s", mp.TableName, attribute, operator, value)
+
+	utils.TextLogger.Info("exec sql query", "sqlStr", sqlStr)
+
+	query := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s WHERE %s %s ?", mp.TableName, attribute, operator)
+
+	var rows *sql.Rows
+	switch attribute {
+	case "id", "power", "is_delete":
+		var valueInt int
+		valueInt, err = strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("error when convert into integer type %s, err: %w", value, err)
+		}
+		rows, err = globalDB.Query(query, valueInt)
+	default:
+
+		rows, err = globalDB.Query(query, value)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error when Query Member: %w", err)
+	}
+
+	defer rows.Close()
+
+	members, err = parseMembersFromRows(rows)
+
+	return
+}
 
 // NOTE:
 // Begin of the function for handling DELETE operation to database

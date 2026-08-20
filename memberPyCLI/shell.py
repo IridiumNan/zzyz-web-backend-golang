@@ -39,11 +39,14 @@ class MemberShell:
         query = f"set the {attr} ["
         for option in options_list:
             query += option + "/"
-        query += "] ->"
+        query = query[:-1] + f"] default {default_option} ->"
 
+        val = ""
         val = input(query)
         if val == "":
             return default_option
+        while val not in options_list:
+            val = input("invalid choice, select again ->")
 
         return val
 
@@ -88,7 +91,25 @@ class MemberShell:
         self.con.new_delete_request(id, soft_bool)
 
     def do_query(self):
-        print("exec queyr")
+        attr_list = ["id", "nick", "power", "email", "is_delete"]
+        attr = self.ask_with_options("attribute", attr_list, "id")
+
+        match attr:
+            case "id":
+                attr_val = self.ask_with_required(attr)
+                self.con.new_query_request(MemberAttr.ID, attr_val)
+            case "nick":
+                attr_val = self.ask_with_required(attr)
+                self.con.new_query_request(MemberAttr.Nick, attr_val)
+            case "power":
+                attr_val = self.ask_with_options(attr, ["0", "1"], "0")
+                self.con.new_query_request(MemberAttr.Power, attr_val)
+            case "email":
+                attr_val = self.ask_with_required(attr)
+                self.con.new_query_request(MemberAttr.Email, attr_val)
+            case "is_delete":
+                attr_val = self.ask_with_options(attr, ["0", "1"], "0")
+                self.con.new_query_request(MemberAttr.IsDelete, attr_val)
 
     def do_exit(self):
         print("Bye")

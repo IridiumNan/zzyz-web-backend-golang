@@ -121,7 +121,7 @@ class MemberConnect:
         value: Any = None,
     ) -> None:
         """
-        Query with specific attributte
+        Query with specific attribute
         If select_all == True
         return all Members
         Just use it as you need list all members
@@ -136,10 +136,12 @@ class MemberConnect:
                 url += "/id"
             case MemberAttr.Nick:
                 url += "/nick"
+                value = f"%{value}%"
             case MemberAttr.Power:
                 url += "/power"
             case MemberAttr.Email:
                 url += "/email"
+                value = f"%{value}%"
             case MemberAttr.IsDelete:
                 url += "/is_delete"
         print(f"send a get request to url: {url}, vale: {value}")
