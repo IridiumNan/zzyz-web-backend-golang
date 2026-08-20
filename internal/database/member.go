@@ -34,7 +34,7 @@ type Member struct {
 
 	// NOTE: This is original passwd and system will not hold it, sql store the hash value of this
 	// RawPasswd is required
-	RawPasswd string `json:"password" binding:"required"`
+	RawPasswd string `json:"passwd" binding:"required"`
 
 	// There is no need to provide the create_time sql will use current time
 	// CreateTime time.Time `json:"create_time"`
@@ -262,7 +262,7 @@ func (mp *MemberSQLProducer) hardDeleteMember(id int) error {
 
 	execFunc := func(ctx context.Context, tx *sql.Tx) error {
 		query := sqlStr
-		_, err := tx.Exec(query)
+		_, err := tx.ExecContext(ctx, query)
 		if err != nil {
 			return fmt.Errorf("error when hard delete member: id = %d", id)
 		}
@@ -310,4 +310,37 @@ func (mp *MemberSQLProducer) softDeleteMember(id int) error {
 	return nil
 }
 
-// TODO: function UpdateMember
+// UpdateMember The function wil update members table as sqlStr below
+// UPDATE TableName SET attribute = value WHERE id = ?
+// If the attribute = passwd, it will hash it first then udpate
+func (mp *MemberSQLProducer) UpdateMember(id int, attribute string, value string) (err error) {
+	if attribute == "passwd" {
+		value, err = hashPasswd(value)
+		if err != nil {
+			return fmt.Errorf("error when hash the passwd: %w", err)
+		}
+		utils.TextLogger.Warn("updating passwd", "hashed_passwd", value, "id", id)
+	}
+	sqlStr := fmt.Sprintf("UPDATE %s SET %s = %s WHERE id = %d", mp.TableName, attribute, value, id)
+
+	utils.TextLogger.Info("exec sql update", "sqlStr", sqlStr)
+
+	execFunc := func(ctx context.Context, tx *sql.Tx) error {
+		query := fmt.Sprintf("UPDATE %s SET %s = ? WHERE id = ?", mp.TableName, attribute)
+		_, err := tx.ExecContext(ctx, query, value, id)
+		if err != nil {
+			return fmt.Errorf("error when update member: sqlStr: %s, err: %w", sqlStr, err)
+		}
+
+		return nil
+	}
+
+	// push new write task to chan
+	// exec on func [RunDBWriteTasker]
+	sqlWriteTaskChan <- sqlWriteTask{
+		execFunc: execFunc,
+		sqlStr:   sqlStr,
+	}
+
+	return nil
+}

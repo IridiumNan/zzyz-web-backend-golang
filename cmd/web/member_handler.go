@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -14,7 +13,35 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var memberDB = database.NewMemberDB()
+var (
+	// memberDB is not real database pointor
+	// It act as the task producer and push task to chan
+	memberDB = database.NewMemberDB()
+
+	// attrChecker for checking if specific attribute is validate on endpoint
+	attrChecker = models.NewAttrChecker()
+)
+
+// parseIsDelete utils function for convert the string
+// false or true into 0 or 1
+// type string
+func parseIsDelete(value string) (val string) {
+	if value == "0" || value == "1" {
+		return value
+	}
+	val = strings.ToLower(value)
+
+	switch val {
+	case "false":
+		val = "0"
+	case "true":
+		val = "1"
+	default:
+		val = "0"
+	}
+
+	return
+}
 
 // memberListHandler Handle the request for endpoint -> /member/list
 // list all list all members and return json response
@@ -35,34 +62,15 @@ func memberListHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, models.NewDataResponseWithMessage(members, "Password will no display, if you want to get passwd, update it pls"))
 }
 
-// memberQueryHandler Handle the request for endpoint -> /member/query/:name
+// memberQueryHandler Handle the request for endpoint -> /member/query/:attr
 // query with conditions and return member list with json format
 func memberQueryHandler(c *gin.Context) {
-	attribute := c.Param("name")
+	attribute := c.Param("attr")
 
-	attrCandidates := []string{
-		"id",
-		"nick",
-		"email",
-		"power",
-		"is_delete",
-	}
 	// NOTE: name can be (id, nick, email, power) attribute
 	// Check it first
-
-	// If attribute not in list
-	// return badrequest with hint
-	if !slices.Contains(attrCandidates, attribute) {
-		type hintResp struct {
-			Hint          string   `json:"hint"`
-			AvailableAttr []string `json:"available_attr"`
-		}
-		hint := hintResp{
-			Hint:          "the attribute must in available_attr list",
-			AvailableAttr: attrCandidates,
-		}
+	if ok, hint := attrChecker.MemberCheck(models.MemberQuery, attribute); !ok {
 		c.JSON(http.StatusBadRequest, models.NewBadResponse(hint, fmt.Errorf("attribute not found")))
-
 		return
 	}
 
@@ -71,18 +79,8 @@ func memberQueryHandler(c *gin.Context) {
 	val := c.Query("value")
 
 	// WARN: Convert to bool if attribute is is_delete
-	if attribute == "is_delete" && val != "0" && val != "1" {
-
-		val = strings.ToLower(val)
-
-		switch val {
-		case "false":
-			val = "0"
-		case "true":
-			val = "1"
-		default:
-			val = "0"
-		}
+	if attribute == "is_delete" {
+		val = parseIsDelete(val)
 	}
 
 	var members []database.Member
@@ -126,13 +124,39 @@ func memberCreateHander(c *gin.Context) {
 	c.JSON(http.StatusOK, models.NewDataResponse("add the task of create member"))
 }
 
+// memberUpdateHander Handle the request for endpoint -> /member/update/:id/:attr
 func memberUpdateHander(c *gin.Context) {
-	// TODO: update member info
+	idStr := c.Param("id")
+	attrStr := c.Param("attr")
+
+	val := c.Query("value")
+
+	if attrStr == "is_delete" {
+		val = parseIsDelete(val)
+	}
+
+	idInt, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.NewBadResponse(nil, fmt.Errorf("error when convert id into int")))
+	}
+
+	if ok, hint := attrChecker.MemberCheck(models.MemberUpdate, attrStr); !ok {
+		c.JSON(http.StatusBadRequest, models.NewBadResponse(hint, fmt.Errorf("attribute not found")))
+	}
+
+	err = memberDB.UpdateMember(idInt, attrStr, val)
+	if err != nil {
+		utils.TextLogger.Error("error when update member infor", "err", err)
+		c.JSON(http.StatusInternalServerError, models.NewBadResponse(nil, fmt.Errorf("error when update member: %w", err)))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.NewDataResponse(fmt.Sprintf("update the member with id : %d, %s", idInt, attrStr)))
 }
 
-// memberDeleteHandler Handle the request for endpoint -> /member/delete/:name
+// memberDeleteHandler Handle the request for endpoint -> /member/delete/:id
 func memberDeleteHandler(c *gin.Context) {
-	idStr := c.Param("name")
+	idStr := c.Param("id")
 	isSoft := c.Query("soft")
 
 	var isSoftBool bool

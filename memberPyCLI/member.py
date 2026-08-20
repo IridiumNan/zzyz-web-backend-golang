@@ -75,7 +75,7 @@ class Member:
             "power": self.power,
             "nick": self.nick,
             "email": self.email,
-            "password": self.passwd,
+            "passwd": self.passwd,
             "is_delete": self.is_delete,
         }
 
@@ -163,13 +163,17 @@ class MemberConnect:
 
         jq_print(resp.json())
 
-    def new_update_request(self, id: int, updated_member: Member) -> None:
-        url = self.base_url + self.endpoints[ZZYZMethod.Update]
-        member_dict = updated_member.get_dict()
+    def new_update_request(self, id: int, attr: str, value: str) -> None:
+        url = (
+            self.base_url
+            + self.endpoints[ZZYZMethod.Update]
+            + "/"
+            + str(id)
+            + "/"
+            + attr
+        )
 
-        payload = {"data": {"id": id, "member": member_dict}}
-
-        resp: requests.Response = self.session.patch(url, json=payload)
+        resp: requests.Response = self.session.patch(url, params=f"value={value}")
 
         print("status code: ", resp.status_code)
 

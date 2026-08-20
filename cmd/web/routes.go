@@ -6,7 +6,7 @@ func getMainRouter() (router *gin.Engine) {
 	router = gin.Default()
 
 	// TODO: write routes
-	// for POST
+	// for posts
 
 	return
 }
@@ -19,11 +19,11 @@ func getInternalRouter() (router *gin.Engine) {
 	// WARN: The /member/query/:name endpoint
 	// :name is attr which is quered for, not id
 	// like "id", "nick", "power" etc..
-	router.GET("/member/query/:name", memberQueryHandler)
+	router.GET("/member/query/:attr", memberQueryHandler)
 
 	router.POST("/member/create", memberCreateHander)
-	router.PATCH("/member/update/:name/*action", memberUpdateHander)
-	router.DELETE("/member/delete/:name", memberDeleteHandler)
+	router.PATCH("/member/update/:id/:attr", memberUpdateHander)
+	router.DELETE("/member/delete/:id", memberDeleteHandler)
 
 	return
 }

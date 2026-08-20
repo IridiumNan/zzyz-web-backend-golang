@@ -35,15 +35,21 @@ class MemberShell:
 
         return val
 
-    def ask_with_options(self, attr: str, options_list: list[str], default_option: str):
+    def ask_with_options(
+        self, attr: str, options_list: list[str], default_option: str | Any = None
+    ):
         query = f"set the {attr} ["
         for option in options_list:
             query += option + "/"
-        query = query[:-1] + f"] default {default_option} ->"
+
+        query = query[:-1] + "]"
+        if default_option is not None:
+            query += f" default {default_option}"
+        query += " ->"
 
         val = ""
         val = input(query)
-        if val == "":
+        if val == "" and default_option is not None:
             return default_option
         while val not in options_list:
             val = input("invalid choice, select again ->")
@@ -61,7 +67,7 @@ class MemberShell:
         power = int(self.ask_with_default("power", 0))
         nick = self.ask_with_required("nick")
         email = self.ask_with_optional("email")
-        passwd = self.ask_with_required("password")
+        passwd = self.ask_with_required("passwd")
         is_delete = False
 
         new_member = Member(
@@ -75,8 +81,15 @@ class MemberShell:
         self.con.new_create_request(new_member)
 
     def do_update(self):
-        # TODO: ask infor interactively
         print("exec update")
+
+        id = int(self.ask_with_required("id"))
+        attr_list = ["nick", "power", "email", "passwd", "is_delete"]
+        attr = self.ask_with_options("attribute", attr_list, "nick")
+
+        value = self.ask_with_required(attr)
+
+        self.con.new_update_request(id, attr, value)
 
     def do_delete(self):
         print("exec delete")

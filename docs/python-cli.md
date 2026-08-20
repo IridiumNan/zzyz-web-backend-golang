@@ -18,7 +18,7 @@ golang的服务端则采用 双 router 模式
     "power": 1,
     "nick": "nick_name",
     "email": "email_str",
-    "password": "password_original",
+    "passwd": "password_original",
     "is_delete": false
 }
 ```
@@ -34,7 +34,7 @@ golang的服务端则采用 双 router 模式
     "id": 1,
     "nick": "nick_name",
     "email": "email_str",
-    "password": "password_original",
+    "passwd": "password_original",
     "is_delete": false
 }
 ```
