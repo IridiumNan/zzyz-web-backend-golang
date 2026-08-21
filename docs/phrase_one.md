@@ -85,12 +85,19 @@ CREATE TABLE post_tag_map (
 
 ## 4. 成员添加（CLI 工具）
 
+> MemberShell
 > 不开发 Web 注册页面。在服务器上直接运行一个独立的 Go 二进制或 Python 脚本。
 
-**命令示例**：
-
 ```bash
-./admin_tool add --nick=zhangsan --email=zs@example.com --password=123456
+zzyz>help
+
+        list: get a list of all members
+        create: create a new member
+        update: update a member info
+        delete: delete a member from database
+        query: query members match the condition
+        exit: exit this shell
+        
 ```
 
 **脚本内部逻辑**：

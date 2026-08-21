@@ -25,5 +25,8 @@ func getInternalRouter() (router *gin.Engine) {
 	router.PATCH("/member/update/:id/:attr", memberUpdateHander)
 	router.DELETE("/member/delete/:id", memberDeleteHandler)
 
+	// TODO: delete this endpoint
+	router.GET("/member/:nick", memberAuthHandler)
+
 	return
 }

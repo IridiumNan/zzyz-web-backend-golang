@@ -67,8 +67,6 @@ func memberListHandler(c *gin.Context) {
 func memberQueryHandler(c *gin.Context) {
 	attribute := c.Param("attr")
 
-	// NOTE: name can be (id, nick, email, power) attribute
-	// Check it first
 	if ok, hint := attrChecker.MemberCheck(models.MemberQuery, attribute); !ok {
 		c.JSON(http.StatusBadRequest, models.NewBadResponse(hint, fmt.Errorf("attribute not found")))
 		return
@@ -87,9 +85,9 @@ func memberQueryHandler(c *gin.Context) {
 	var err error
 	switch attribute {
 	case "id", "is_delete", "power":
-		members, err = memberDB.QeuryMember(attribute, val, false)
+		members, err = memberDB.QueryMember(attribute, val, false)
 	default:
-		members, err = memberDB.QeuryMember(attribute, val, true)
+		members, err = memberDB.QueryMember(attribute, val, true)
 	}
 
 	if err != nil {
@@ -184,4 +182,21 @@ func memberDeleteHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.NewDataResponse(fmt.Sprintf("add the task for delete member with id: %d, soft: %v", idInt, isSoftBool)))
+}
+
+// TEST: This function just for test
+// Don't use it
+// FIXME: NEVER USE THIS
+// USE ShouldBindBodyWithJSON for security
+func memberAuthHandler(c *gin.Context) {
+	nick := c.Param("nick")
+	rawPasswd := c.Query("passwd")
+
+	power, err := memberDB.FetchMemberPower(nick, rawPasswd)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.NewBadResponse(power, err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.NewDataResponse(fmt.Sprintf("power: %d", power)))
 }

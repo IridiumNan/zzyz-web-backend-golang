@@ -15,7 +15,7 @@ type sqlWriteTaskFunc func(context.Context, *sql.Tx) error
 type sqlWriteTask struct {
 	execFunc sqlWriteTaskFunc
 
-	// NOTE: sqlStr is for log recored
+	// sqlStr is for log recored
 	// WARN: Don't use it as the transcation query
 	sqlStr string
 }
@@ -27,11 +27,22 @@ var (
 	sqlWriteTaskChan chan sqlWriteTask = make(chan sqlWriteTask, 500)
 )
 
-// RunDBWriteTasker : This Tasker just handle the request for post update and
+// pushWriteTaskToChan This function will push new task to chan
+// The sqlStr is just for LOG ONLY
+// It will exec the execFunc actually
+// Task pushed on this chan will be exec on [RunDBWriteTasker]
+func pushWriteTaskToChan(execFunc sqlWriteTaskFunc, sqlStr string) {
+	sqlWriteTaskChan <- sqlWriteTask{
+		execFunc: execFunc,
+		sqlStr:   sqlStr,
+	}
+}
+
+// RunDBWriteTasker : This Tasker just handle the request which write on database
 // NOTE: Run it before you start router
 // It will exec the execFunc and sqlStr on sqlWriteTask just LOG ONLY
 func RunDBWriteTasker() {
-	utils.TextLogger.Info("RunDBWriteTasker: starting task")
+	utils.TextLogger.Info("RunDBWriteTasker: starting write task")
 	for {
 		select {
 		case <-sqlWriteStopChan:
