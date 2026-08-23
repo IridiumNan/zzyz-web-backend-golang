@@ -314,6 +314,7 @@ func (mp *MemberSQLProducer) FetchMemberPower(nick string, rawPasswd string) (po
 	errPower := -1
 	sqlStr := fmt.Sprintf("SELECT power, passwd FROM %s WHERE nick = ?", mp.TableName)
 
+	utils.TextLogger.Info(fmt.Sprintf("exec sql query: %s", sqlStr), "nick", nick)
 	rows, err := globalDB.Query(sqlStr, nick)
 	if err != nil {
 		return errPower, fmt.Errorf("error when get passwd of %s, err: %s", nick, err)
