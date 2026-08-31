@@ -9,32 +9,16 @@ golang的服务端则采用 双 router 模式
 
 ---
 
-## 添加成员
+## USAGE
 
-`POST` `/member/create`
+Use `python memberPyCLI/main.py` for running this shell
+Then you can type `help` for menu
 
-```json
-{
-    "power": 1,
-    "nick": "nick_name",
-    "email": "email_str",
-    "passwd": "password_original",
-    "is_delete": false
-}
-```
-
----
-
-## 更新
-
-`PATCH` `/member/update`
-
-```json
-{
-    "id": 1,
-    "nick": "nick_name",
-    "email": "email_str",
-    "passwd": "password_original",
-    "is_delete": false
-}
-```
+| Command | Effect |
+| --------------- | --------------- |
+| list | get a list of all members |
+| create | create a new member |
+| update | update a member info |
+| delete | delete a member from database |
+| query | query member matchs the condition |
+| exit | exit the shell |

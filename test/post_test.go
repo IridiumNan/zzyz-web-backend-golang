@@ -116,6 +116,8 @@ func checkResult(postConfig *models.PostConfig, expectedConfig *models.PostConfi
 
 func TestLoadPostConfig(t *testing.T) {
 	fileName := "test.toml"
+
+	slog.Info("start test for load post configuration from toml file", "file_name", fileName)
 	success := dumpPostConfig(fileName)
 	if !success {
 		t.Fatal("fail to dump test configuration, exit the test")
