@@ -81,7 +81,7 @@ func memberQueryHandler(c *gin.Context) {
 		val = parseIsDelete(val)
 	}
 
-	var members []database.Member
+	var members []models.Member
 	var err error
 	switch attribute {
 	case "id", "is_delete", "power":
@@ -101,7 +101,7 @@ func memberQueryHandler(c *gin.Context) {
 // memberCreateHander Handle the request for endpoint -> /member/create
 func memberCreateHander(c *gin.Context) {
 	type createReq struct {
-		Data map[string]database.Member `json:"data"`
+		Data map[string]models.Member `json:"data"`
 	}
 	var reqJSON createReq
 

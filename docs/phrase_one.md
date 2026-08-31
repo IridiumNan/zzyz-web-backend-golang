@@ -51,7 +51,8 @@ CREATE TABLE posts (
     title            TEXT NOT NULL,
     author           TEXT,                    -- 可空
     overview         TEXT NOT NULL,                    -- 概览
-    markdown_content TEXT NOT NULL,           -- 原始 Markdown
+    content          TEXT NOT NULL,           -- 原始 上传的 index.unknown 内容
+    format           INTEGER NOT NULL,        -- 格式 系统内部进行映射
     is_pending       INTEGER DEFAULT 1,       -- 1=待审核，0=已发布，2=审核不通过
     view_count       INTEGER DEFAULT 0,       -- 阅读量（原 click_time 更名）
     create_time      DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -97,7 +98,6 @@ zzyz>help
         delete: delete a member from database
         query: query members match the condition
         exit: exit this shell
-        
 ```
 
 **脚本内部逻辑**：
@@ -294,14 +294,14 @@ posts/
 
 ## 8. 开发阶段排期建议（单人两周）
 
-| 天数 | 任务 |
-| :--- | :--- |
-| Day 1-2 | 搭建 Golang 项目结构，完成 SQLite 初始化与 ORM（或原生 SQL）封装。 |
-| Day 3-4 | 实现 CLI 工具（添加成员），实现 Basic Auth 中间件。 |
-| Day 5-6 | 实现公开接口（`GET /api/posts`）与静态文件服务（含 `view_count`）。 |
-| Day 7-9 | 实现上传压缩包接口、解压与元数据提取逻辑。 |
-| Day 10-11 | 实现审核列表、查看详情、审核通过/拒绝接口（含 Markdown 渲染为 HTML）。 |
-| Day 12-14 | 端到端联调、编写简单的前端测试页面、修复 Bug、部署上线。 |
+| 天数        | 任务                                               |
+|:--------- |:------------------------------------------------ |
+| Day 1-2   | 搭建 Golang 项目结构，完成 SQLite 初始化与 ORM（或原生 SQL）封装。    |
+| Day 3-4   | 实现 CLI 工具（添加成员），实现 Basic Auth 中间件。               |
+| Day 5-6   | 实现公开接口（`GET /api/posts`）与静态文件服务（含 `view_count`）。 |
+| Day 7-9   | 实现上传压缩包接口、解压与元数据提取逻辑。                            |
+| Day 10-11 | 实现审核列表、查看详情、审核通过/拒绝接口（含 Markdown 渲染为 HTML）。      |
+| Day 12-14 | 端到端联调、编写简单的前端测试页面、修复 Bug、部署上线。                   |
 
 ---
 

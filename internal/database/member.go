@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/IridiumNan/zzyz-web-backend-golang/internal/models"
 	"github.com/IridiumNan/zzyz-web-backend-golang/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,35 +16,6 @@ const (
 	logOnlyHint     = "[LOG ONLY]"
 )
 
-type Member struct {
-	// The primary key ID
-	// It is auto increment on the sqlite
-	// You should not provide the value
-	ID int `json:"id"`
-
-	// NOTE: The power of this member
-	// for now 1 has all power and 0 has no power
-	// use the binary 000, 001
-	Power int `json:"power" binding:"required"`
-
-	// The name for member assigne
-	Nick string `json:"nick" binding:"required"`
-
-	// NOTE: It's optional
-	Email string `json:"email"`
-
-	// NOTE: This is original passwd and system will not hold it, sql store the hash value of this
-	// RawPasswd is required
-	// use bcrypt to hash raw password
-	RawPasswd string `json:"passwd" binding:"required"`
-
-	// There is no need to provide the create_time sql will use current time
-	// CreateTime time.Time `json:"create_time"`
-
-	// WARN: On sql is INTERGER type so you must convert it as int before you insert it into database
-	IsDelete bool `json:"is_delete" binding:"required"`
-}
-
 type MemberSQLProducer struct {
 	// Hold the table name for query
 	TableName string
@@ -52,7 +24,7 @@ type MemberSQLProducer struct {
 // NewMemberDB : return a new MemberSQLProducer with Default TableName [memberTableName]
 func NewMemberDB() *MemberSQLProducer {
 	return &MemberSQLProducer{
-		memberTableName,
+		TableName: memberTableName,
 	}
 }
 
@@ -81,8 +53,8 @@ func checkPasswdAndHash(passwd string, hash string) bool {
 // nick
 // email
 // is_delete
-func parseMembersFromRows(rows *sql.Rows) (members []Member, err error) {
-	members = []Member{}
+func parseMembersFromRows(rows *sql.Rows) (members []models.Member, err error) {
+	members = []models.Member{}
 	for rows.Next() {
 		var id int
 		var power int
@@ -100,7 +72,7 @@ func parseMembersFromRows(rows *sql.Rows) (members []Member, err error) {
 		if isDelete != 0 {
 			isDeleteBool = true
 		}
-		members = append(members, Member{
+		members = append(members, models.Member{
 			ID:        id,
 			Power:     power,
 			Nick:      nick,
@@ -115,7 +87,7 @@ func parseMembersFromRows(rows *sql.Rows) (members []Member, err error) {
 // InsertMember : insert the new member into the database
 // it will not use member.ID, the ID should handle by sqlite itself (auto increment)
 // As it's a write operation on database, so the request will handled by [RunDBWriteTasker]
-func (mp *MemberSQLProducer) InsertMember(member Member) error {
+func (mp *MemberSQLProducer) InsertMember(member models.Member) error {
 	passwd, err := hashPasswd(member.RawPasswd)
 	if err != nil {
 		return fmt.Errorf("InsertMember: error when hash passwd: %w", err)
@@ -169,7 +141,7 @@ func (mp *MemberSQLProducer) InsertMember(member Member) error {
 // return all member struct slice and error
 // This function is read database so doesn't push the task to sqlWriteTaskChan
 // If the len(members) == 0. it will still return, you should check
-func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
+func (mp *MemberSQLProducer) ListMember() ([]models.Member, error) {
 	queryStr := fmt.Sprintf("SELECT id, power, nick, email, is_delete FROM %s", mp.TableName)
 
 	rows, err := globalDB.Query(queryStr)
@@ -189,7 +161,7 @@ func (mp *MemberSQLProducer) ListMember() ([]Member, error) {
 // Ensure you convert all type as the data on sql before calling this func
 // If the length of members is 0, it will still return, remember to check it
 // the param like if True, will query with WHERE attribute like value
-func (mp *MemberSQLProducer) QueryMember(attribute string, value string, like bool) (members []Member, err error) {
+func (mp *MemberSQLProducer) QueryMember(attribute string, value string, like bool) (members []models.Member, err error) {
 	operator := "="
 	if like {
 		operator = "like"
@@ -318,6 +290,10 @@ func (mp *MemberSQLProducer) FetchMemberPower(nick string, rawPasswd string) (po
 	rows, err := globalDB.Query(sqlStr, nick)
 	if err != nil {
 		return errPower, fmt.Errorf("error when get passwd of %s, err: %s", nick, err)
+	}
+
+	if err = rows.Err(); err != nil {
+		return errPower, fmt.Errorf("error when query member %s, err: %w", nick, err)
 	}
 
 	// NOTE: even the nick is unique on this table

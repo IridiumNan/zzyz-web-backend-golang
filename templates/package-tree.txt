@@ -1,0 +1,12 @@
+package-tmpl
+├── assets
+│   ├── note.pdf
+│   ├── notes.tar.xz
+│   ├── pic1.png
+│   ├── pic2.png
+│   ├── pic3.png
+│   └── presentation.pptx
+├── config.toml
+└── index.unknown
+
+2 directories, 8 files

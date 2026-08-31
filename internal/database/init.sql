@@ -12,8 +12,9 @@ CREATE TABLE posts (
     title            TEXT NOT NULL,
     author           TEXT,                    -- 可空
     overview         TEXT NOT NULL,           -- 概览
-    markdown_content TEXT NOT NULL,           -- 原始 Markdown
-    is_pending       INTEGER DEFAULT 1,       -- 1=待审核，0=已发布，2=审核不通过
+    content          TEXT NOT NULL,           -- 原始内容， 依靠 format 区分格式
+    format           INTEGER NOT NULL,        -- content 的格式
+    status           INTEGER DEFAULT 1,       -- 1=待审核，0=已发布，-1=审核不通过
     view_count       INTEGER DEFAULT 0,       -- 阅读量（原 click_time 更名）
     create_time      DATETIME DEFAULT CURRENT_TIMESTAMP,
     update_time      DATETIME DEFAULT CURRENT_TIMESTAMP

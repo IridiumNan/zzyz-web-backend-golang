@@ -1,51 +1,34 @@
 package database
 
 import (
+	"fmt"
 	"os"
-	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/IridiumNan/zzyz-web-backend-golang/internal/models"
 )
-
-type PostConfig struct {
-	Title    string `toml:"title"`
-	Author   string `toml:"author"`
-	Overview string `toml:"overview"`
-}
-
-type Post struct {
-	Title           string    `json:"title"`
-	Author          string    `json:"author"`
-	Overview        string    `json:"overview"`
-	MarkdownContent string    `json:"markdown_content"`
-	IsPending       bool      `json:"is_pending"`
-	ViewCount       int       `json:"view_count"`
-	CreateTime      time.Time `json:"create_time"`
-	UpdateTime      time.Time `json:"update_time"`
-}
 
 // LoadPostConfigFromToml : load the post configuration from the toml file
 // if fail, return nil
-func LoadPostConfigFromToml(configPath string) *PostConfig {
+func LoadPostConfigFromToml(configPath string) (*models.PostConfig, error) {
 	file, err := os.OpenFile(configPath, os.O_RDONLY, 0o644)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("error when open file, file path: %s, err: %w", configPath, err)
 	}
 
 	defer file.Close()
 
-	var tomlByte []byte
-	_, err = file.Read(tomlByte)
+	tomlByte, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("error when read file, file path: %s, err: %w", configPath, err)
 	}
 
-	var postConfig PostConfig
+	var postConfig models.PostConfig
 
 	err = toml.Unmarshal(tomlByte, &postConfig)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("error when Unmarshal the config file content, raw content: %s, err: %w", string(tomlByte), err)
 	}
 
-	return &postConfig
+	return &postConfig, nil
 }
