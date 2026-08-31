@@ -97,3 +97,15 @@ package
 - assets 当中的内容是member提供的附件， 根据需要进行整理和编排
 
 - **务必保证 index.unknown 当中对于 assets当中的引用是相对路径**
+
+**打包压缩统一使用 zip**
+
+- 压缩命令
+
+```bash
+zip -r package package
+```
+
+这个命令会产生一个 `package.zip` 压缩包， 将这个压缩包上传至系统即可
+
+**注意， 解压缩之后是一个文件夹**
