@@ -79,7 +79,7 @@ tags = ["golang", "CS"]
 
 **GoadKeeper** 根据 member 整理上交的原始内容
 
-保证打包后的 zip 包符合下面的格式 
+保证打包后的 zip 包符合下面的格式
 
 ```bash
 package
@@ -109,3 +109,62 @@ zip -r package package
 这个命令会产生一个 `package.zip` 压缩包， 将这个压缩包上传至系统即可
 
 **注意， 解压缩之后是一个文件夹**
+
+---
+
+```tree
+zzyz-data
+├── build
+│   ├── By-ID
+│   │   └── 1 -> ../html_released/1
+│   ├── By-Title
+│   ├── html_pending
+│   │   ├── 2
+│   │   │   ├── assets
+│   │   │   ├── config.toml
+│   │   │   └── index.html
+│   │   └── 3
+│   │       ├── assets
+│   │       ├── config.toml
+│   │       └── index.html
+│   ├── html_released
+│   │   └── 1
+│   │       ├── assets
+│   │       ├── config.toml
+│   │       └── index.html
+│   └── raw
+│       ├── 1
+│       │   ├── assets
+│       │   ├── config.toml
+│       │   ├── index.unknown
+│       │   └── package.zip
+│       ├── 2
+│       │   ├── assets
+│       │   ├── config.toml
+│       │   ├── index.unknown
+│       │   └── package.zip
+│       └── 3
+│           ├── assets
+│           ├── config.toml
+│           ├── index.unknown
+│           └── package.zip
+└── zip_cache
+    ├── package_20260901_082516
+    │   └── package.zip
+    ├── package_20260901_082521
+    │   └── package.zip
+    └── package_20260901_082610
+        └── package.zip
+```
+
+client -> package_receiver -> zip_cache
+
+zip_cache -> unpacker -> raw/{id}
+
+raw/{id} -> arranger -> raw/{id} (structure)
+
+raw/{id} (structure) -> builder -> html_pending/{id}
+
+html_pending/{id} -> admin -> html_released
+
+html_released -> soft link index.html and assets

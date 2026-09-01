@@ -10,6 +10,8 @@ import (
 )
 
 func main() {
+	utils.UnzipCommandAvailable()
+
 	// WARN: This func panic if fail
 	config.InitGlobalConfig()
 
