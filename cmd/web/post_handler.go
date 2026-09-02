@@ -51,7 +51,7 @@ func postUploadHandler(c *gin.Context) {
 	}
 
 	packagePath := path.Join(dstDir, packageName)
-	err = c.SaveUploadedFile(uploadPackage, packagePath, 0o644)
+	err = c.SaveUploadedFile(uploadPackage, packagePath, 0o755)
 	if err != nil {
 		utils.TextLogger.Error("error when receive uploaded package", "err", err)
 		c.JSON(http.StatusInternalServerError, models.NewBadResponse("error", fmt.Errorf("error when receive uploaded package: %w", err)))
