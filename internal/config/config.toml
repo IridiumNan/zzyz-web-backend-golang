@@ -9,5 +9,5 @@ internal_address = "127.0.0.1:8081"
 database_path = "./database.db"
 
 # log file config path
-log_path =  "~/.local/state/zzyz-web/log"
+log_path =  "./default_log"
 

@@ -116,7 +116,9 @@ zip -r package package
 zzyz-data
 ├── build
 │   ├── By-ID
-│   │   └── 1 -> ../html_released/1
+│   │   └── 1
+│   │       ├── assets -> ../../html_released/1/assets
+│   │       └── index.html -> ../../html_released/1/index.html
 │   ├── By-Title
 │   ├── html_pending
 │   │   ├── 2
@@ -155,6 +157,8 @@ zzyz-data
     │   └── package.zip
     └── package_20260901_082610
         └── package.zip
+
+25 directories, 19 files
 ```
 
 client -> package_receiver -> zip_cache

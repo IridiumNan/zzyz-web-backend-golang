@@ -5,9 +5,13 @@ import "github.com/gin-gonic/gin"
 func getMainRouter() (router *gin.Engine) {
 	router = gin.Default()
 
+	// 8 MiB
+	router.MaxMultipartMemory = 8 << 20
+
 	// TODO: write routes
 	// for posts
 
+	router.POST("/posts/upload", postUploadHandler)
 	return
 }
 

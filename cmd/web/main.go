@@ -10,7 +10,11 @@ import (
 )
 
 func main() {
-	utils.UnzipCommandAvailable()
+	err := utils.EnsureDataDirs()
+	if err != nil {
+		slog.Error("when ensure all data dirs, exting...", "err", err.Error())
+		return
+	}
 
 	// WARN: This func panic if fail
 	config.InitGlobalConfig()
